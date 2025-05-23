@@ -12,6 +12,9 @@ namespace BrowseMessageCA
     {
         const int majVer = 1;
         const int minver = 0;
+
+        const string Terrain1 = "LY";
+        const string Terrain2 = "BA";
         public enum MCAElementType
         {
             type,
@@ -109,6 +112,10 @@ namespace BrowseMessageCA
         public Form1()
         {
             InitializeComponent();
+            label2.Text = "Balises " + Terrain1 + "->" + Terrain2;
+            label3.Text = "Balises " + Terrain2 + "->" + Terrain1;
+            listMessages.Columns[3].Text = Terrain1 + "->" + Terrain2;
+            listMessages.Columns[4].Text = Terrain2 + "->" + Terrain1;
             listMessages.MouseClick += listMessages_OnClick;
             listSubMessages.MouseClick += listSubMessages_OnClick;
             this.Text = "Analyse des messages v" + majVer.ToString() + "." + minver.ToString()+" par David Lafarge";
@@ -368,11 +375,11 @@ namespace BrowseMessageCA
                     {
                         listMes[j].Add(msg);
                         if (!msg.islam) listLAMes[j].Add(msg);
-                        if (msg.sender == "LY" && msg.receiver == "BA")
+                        if (msg.sender == Terrain1 && msg.receiver == Terrain2)
                         {
                             nlyba++;
                         }
-                        if (msg.sender == "BA" && msg.receiver == "LY")
+                        if (msg.sender == Terrain2 && msg.receiver == Terrain1)
                         {
                             nbaly++;
                         }
@@ -399,7 +406,7 @@ namespace BrowseMessageCA
             listLYBA.Items.Clear();
             foreach (var msg in msLines)
             {
-                if (msg.sender == "LY" && msg.receiver == "BA")
+                if (msg.sender == Terrain1 && msg.receiver == Terrain2)
                 {
                     if (msg.notdecode) nndeclyba++;
                     if (msg.notassocie) nanalyba++;
@@ -407,7 +414,7 @@ namespace BrowseMessageCA
                     if (msg.associe) nasslyba++;
                     if (msg.ptid!="") listLYBA.Items.Add(msg.ptid);
                 }
-                if (msg.sender == "BA" && msg.receiver == "LY")
+                if (msg.sender == Terrain2 && msg.receiver == Terrain1)
                 {
                     if (msg.notdecode) nndecbaly++;
                     if (msg.notassocie) nanabaly++;
@@ -466,15 +473,6 @@ namespace BrowseMessageCA
                         {
                             fileContent = reader.ReadToEnd();
                             ParseMessageCA(fileContent);
-                            //foreach (var msg in msLines)
-                            //{
-                            //    foreach (var type in MCAMesType)
-                            //    {
-                            //        if (msg.departure == "LY" && msg.destination == "BA" && msg.mestype == type.Type)
-                            //        {
-
-                            //        }
-                            //}
                             FillTableau();
                             isLoaded = true;
                         }

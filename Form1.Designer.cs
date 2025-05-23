@@ -240,9 +240,9 @@
         public System.Windows.Forms.ColumnHeader cDir1;
         public System.Windows.Forms.ColumnHeader cDir2;
         public System.Windows.Forms.ListBox listLYBA;
-        private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Label label3;
         public System.Windows.Forms.ListBox listBALY;
+        public System.Windows.Forms.Label label2;
+        public System.Windows.Forms.Label label3;
     }
 }
 
