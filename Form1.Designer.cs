@@ -28,12 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("ACT");
-            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("ABI");
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("MAC");
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("REV");
-            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem("PNT");
-            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem("LAM");
+            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem("ACT");
+            System.Windows.Forms.ListViewItem listViewItem9 = new System.Windows.Forms.ListViewItem("ABI");
+            System.Windows.Forms.ListViewItem listViewItem10 = new System.Windows.Forms.ListViewItem("MAC");
+            System.Windows.Forms.ListViewItem listViewItem11 = new System.Windows.Forms.ListViewItem("REV");
+            System.Windows.Forms.ListViewItem listViewItem12 = new System.Windows.Forms.ListViewItem("PNT");
+            System.Windows.Forms.ListViewItem listViewItem13 = new System.Windows.Forms.ListViewItem("LAM");
+            System.Windows.Forms.ListViewItem listViewItem14 = new System.Windows.Forms.ListViewItem("Autres");
             this.button1 = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.listMessages = new System.Windows.Forms.ListView();
@@ -51,13 +52,16 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.listBALY = new System.Windows.Forms.ListBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.button2 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // button1
             // 
             this.button1.Location = new System.Drawing.Point(123, 14);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(605, 28);
+            this.button1.Size = new System.Drawing.Size(212, 28);
             this.button1.TabIndex = 0;
             this.button1.Text = "Parcourir...";
             this.button1.UseVisualStyleBackColor = true;
@@ -86,16 +90,17 @@
             this.listMessages.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listMessages.HideSelection = false;
             this.listMessages.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem1,
-            listViewItem2,
-            listViewItem3,
-            listViewItem4,
-            listViewItem5,
-            listViewItem6});
-            this.listMessages.Location = new System.Drawing.Point(15, 48);
+            listViewItem8,
+            listViewItem9,
+            listViewItem10,
+            listViewItem11,
+            listViewItem12,
+            listViewItem13,
+            listViewItem14});
+            this.listMessages.Location = new System.Drawing.Point(15, 108);
             this.listMessages.MultiSelect = false;
             this.listMessages.Name = "listMessages";
-            this.listMessages.Size = new System.Drawing.Size(353, 273);
+            this.listMessages.Size = new System.Drawing.Size(447, 273);
             this.listMessages.TabIndex = 2;
             this.listMessages.UseCompatibleStateImageBehavior = false;
             this.listMessages.View = System.Windows.Forms.View.Details;
@@ -103,7 +108,7 @@
             // cTypes
             // 
             this.cTypes.Text = "Types";
-            this.cTypes.Width = 86;
+            this.cTypes.Width = 180;
             // 
             // cNumber
             // 
@@ -133,7 +138,7 @@
             this.listSubMessages.GridLines = true;
             this.listSubMessages.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listSubMessages.HideSelection = false;
-            this.listSubMessages.Location = new System.Drawing.Point(470, 327);
+            this.listSubMessages.Location = new System.Drawing.Point(15, 387);
             this.listSubMessages.MultiSelect = false;
             this.listSubMessages.Name = "listSubMessages";
             this.listSubMessages.Size = new System.Drawing.Size(258, 214);
@@ -158,7 +163,7 @@
             // 
             // textMessage
             // 
-            this.textMessage.Location = new System.Drawing.Point(15, 327);
+            this.textMessage.Location = new System.Drawing.Point(279, 387);
             this.textMessage.Multiline = true;
             this.textMessage.Name = "textMessage";
             this.textMessage.ReadOnly = true;
@@ -168,7 +173,7 @@
             // listLYBA
             // 
             this.listLYBA.FormattingEnabled = true;
-            this.listLYBA.Location = new System.Drawing.Point(390, 63);
+            this.listLYBA.Location = new System.Drawing.Point(498, 123);
             this.listLYBA.Name = "listLYBA";
             this.listLYBA.Size = new System.Drawing.Size(111, 251);
             this.listLYBA.TabIndex = 5;
@@ -176,7 +181,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(387, 48);
+            this.label2.Location = new System.Drawing.Point(495, 108);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(79, 13);
             this.label2.TabIndex = 6;
@@ -185,7 +190,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(506, 48);
+            this.label3.Location = new System.Drawing.Point(614, 108);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(79, 13);
             this.label3.TabIndex = 8;
@@ -194,16 +199,47 @@
             // listBALY
             // 
             this.listBALY.FormattingEnabled = true;
-            this.listBALY.Location = new System.Drawing.Point(509, 63);
+            this.listBALY.Location = new System.Drawing.Point(617, 123);
             this.listBALY.Name = "listBALY";
             this.listBALY.Size = new System.Drawing.Size(111, 251);
             this.listBALY.TabIndex = 7;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(129, 55);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(161, 13);
+            this.label5.TabIndex = 11;
+            this.label5.Text = "Couples sender/receiver trouvés";
+            // 
+            // comboBox1
+            // 
+            this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox1.FormattingEnabled = true;
+            this.comboBox1.Location = new System.Drawing.Point(132, 72);
+            this.comboBox1.Name = "comboBox1";
+            this.comboBox1.Size = new System.Drawing.Size(153, 21);
+            this.comboBox1.TabIndex = 12;
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(291, 55);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(44, 37);
+            this.button2.TabIndex = 15;
+            this.button2.Text = "OK";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(740, 553);
+            this.ClientSize = new System.Drawing.Size(740, 613);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.comboBox1);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.listBALY);
             this.Controls.Add(this.label2);
@@ -243,6 +279,9 @@
         public System.Windows.Forms.ListBox listBALY;
         public System.Windows.Forms.Label label2;
         public System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label5;
+        public System.Windows.Forms.ComboBox comboBox1;
+        public System.Windows.Forms.Button button2;
     }
 }
 

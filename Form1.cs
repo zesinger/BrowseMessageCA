@@ -1,20 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace BrowseMessageCA
 {
     public partial class Form1 : Form
     {
+        // version du logiciel
         const int majVer = 1;
-        const int minver = 0;
+        const int minver = 1;
 
-        const string Terrain1 = "LY";
-        const string Terrain2 = "BA";
+        // terrains sender et receiver
+        string Terrain1 = "LY";
+        string Terrain2 = "BA";
+        List<(string,string)> CouplesTerrains = new List<(string,string)> ();
+        string fileContent = string.Empty;
+        //List<string> AllTerrains = new List<string>();
+
+        const string NulText = "Autre";
+        // toujours laisser "type" en premier dans cette enum
         public enum MCAElementType
         {
             type,
@@ -31,6 +41,7 @@ namespace BrowseMessageCA
             notdecode,
             ptid,
         }
+        // toujours laisser type/TITLE en premier dans cette List<>
         readonly public List<(MCAElementType Id, string Text)> MessageCAElement = new List<(MCAElementType Id, string Text)>()
         {
             (MCAElementType.type,"-TITLE"),
@@ -73,6 +84,7 @@ namespace BrowseMessageCA
             {
                 if (ttype == type.text) return type.Type;
             }
+            if (!autresTypes.Contains(ttype)) autresTypes.Add(ttype);
             return MCAMessageType.NUL;
         }
         private string GetMessageTypeFromType(MCAMessageType type)
@@ -83,10 +95,11 @@ namespace BrowseMessageCA
             }
             return "NUL";
         }
-        private int dispList = -1;
-        private bool dispNoLAM = false;
         private bool isLoaded = false;
+        private bool dispNoLAM = false;
+        private int dispList = -1;
         List<string> filelines = new List<string>();
+        List<string> autresTypes = new List<string>();
         public struct MessageCALine
         {
             public string fullline;
@@ -140,6 +153,7 @@ namespace BrowseMessageCA
             for (int j = 0; j < MCAMesType.Count; j++)
             {
                 if (MCAMesType[j].text == itemtxt) i = j;
+                if (itemtxt.StartsWith(NulText)) i = j;
             }
             dispList = i;
             if (i == -1) return;
@@ -207,8 +221,11 @@ namespace BrowseMessageCA
                 .Where(line => !string.IsNullOrWhiteSpace(line))  // Filter out empty or whitespace-only lines
                 .ToList();
             msLines = new List<MessageCALine>();
-            foreach (var fileline in filelines)
+            string fileline;
+            autresTypes = new List<string>();
+            foreach (var fleline in filelines)
             {
+                fileline = fleline;
                 MessageCALine ms = new MessageCALine();
                 ms.fullline = fileline;
                 ms.registration = "";
@@ -219,8 +236,6 @@ namespace BrowseMessageCA
                 ms.notassocie = false;
                 ms.notdecode = false;
                 ms.notassociable = false;
-                ms.sender = "";
-                ms.receiver = "";
                 ms.ptid = "";
                 // extract date/time
                 string dateTimePart = fileline.Substring(0, 20);
@@ -232,6 +247,25 @@ namespace BrowseMessageCA
                 // une ligne qui ne commence pas par la date et l'heure est ignorée:
                 if (!DateTime.TryParseExact(normalized, "dd/MM/yyyy HH:mm:ss",
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out ms.datetime)) continue;
+                bool ignoreline = false;
+                // si c'est un LAM on retire la partie -REFDATA qui contient un SEQNUM, un -SENDER FAC et un -RECVR FAC qu'on veut ignorer alors on les retire
+                if (fileline.IndexOf("-TITLE LAM") >= 0)
+                {
+                    // on retire le SEQNUM après REFDATA
+                    fileline = Regex.Replace(fleline, @"(?<=-REFDATA(?:.(?!-MSGREF))*?)-SEQNUM\s+[^\s\-]+", "");
+                    // on retire le REFDATA jusqu'au receiver du REFDATA (on ne garde que la partie MSGREF de la ligne LAM)
+                    fileline = Regex.Replace(fileline, @"-REFDATA.*?-RECVR -FAC [^\s\-]+", "");
+                }
+                // si c'est un MAC on retire la partie -MSGREF qui contient un SEQNUM, un -SENDER FAC et un -RECVR FAC qu'on veut ignorer alors on les retire
+                else if (fileline.IndexOf("-TITLE MAC") >= 0)
+                {
+                    // on retire le SEQNUM après MSGREF
+                    fileline = Regex.Replace(fleline, @"(?<=-MSGREF(?:.(?!-REFDATA))*?)-SEQNUM\s+[^\s\-]+", "");
+                    // on retire le MSGREF jusqu'au receiver du MSGREF (on ne garde que la partie REFDATA de la ligne MAC)
+                    fileline = Regex.Replace(fileline, @"-MSGREF.*?-RECVR -FAC [^\s\-]+", "");
+                }
+                // On ajoute une fausse donnée inutile à la fin pour éviter les cas où ce qui nous intéresse tombe en EOL
+                fileline += "-FIN MSG";
                 foreach (var elt in MessageCAElement)
                 {
                     int index = 0;
@@ -264,17 +298,35 @@ namespace BrowseMessageCA
                                             if (elt.Id == MCAElementType.registration)
                                                 ms.registration = fileline.Substring(start, dashIndex - start).Trim();
                                             else if (elt.Id == MCAElementType.type)
+                                            {
                                                 ms.mestype = GetMessageTypeFromText(fileline.Substring(start, dashIndex - start).Trim());
+                                            }
                                             else if (elt.Id == MCAElementType.departure)
                                                 ms.departure = fileline.Substring(start, dashIndex - start).Trim();
                                             else if (elt.Id == MCAElementType.destination)
                                                 ms.destination = fileline.Substring(start, dashIndex - start).Trim();
-                                            else if (elt.Id == MCAElementType.sender && ms.sender == "")
+                                            else if (elt.Id == MCAElementType.sender)
+                                            {
                                                 ms.sender = fileline.Substring(start, dashIndex - start).Trim();
-                                            else if (elt.Id == MCAElementType.receiver && ms.receiver == "") 
+                                                if (ms.sender != Terrain1 && ms.sender != Terrain2)
+                                                {
+                                                    ignoreline = true;
+                                                    index = start;
+                                                    break;
+                                                }
+                                            }
+                                            else if (elt.Id == MCAElementType.receiver)
+                                            {
                                                 ms.receiver = fileline.Substring(start, dashIndex - start).Trim();
+                                                if (ms.receiver != Terrain1 && ms.receiver != Terrain2)
+                                                {
+                                                    ignoreline = true;
+                                                    index = start;
+                                                    break;
+                                                }
+                                            }
                                             else if (elt.Id == MCAElementType.ptid)
-                                                ms.ptid= fileline.Substring(start, dashIndex - start).Trim();
+                                                ms.ptid = fileline.Substring(start, dashIndex - start).Trim();
                                         }
                                     }
                                     index = start;
@@ -306,27 +358,27 @@ namespace BrowseMessageCA
                                     index += elt.Text.Length;
                                 }
                                 break;
-                            // SEQNUM must be handled separately
                             case MCAElementType.seqnum:
                                 {
                                     int start = index + elt.Text.Length;
                                     int dashIndex = fileline.IndexOf('-', start);
                                     if (dashIndex != -1 && dashIndex > start)
                                     {
-                                        // we check the text behind the the number if this is the real seqnum of the message or the number of the main message for this flight
+                                        // Pour le LAM, on n'a gardé que le SEQNUM qui donne le message auquel il fait référence
                                         string nexelt = fileline.Substring(dashIndex, fileline.IndexOf(" ", dashIndex) - dashIndex).Trim();
-                                        if (nexelt == "-REFDATA")
+                                        if (ms.mestype == MCAMessageType.LAM)
                                             ms.seqnumrel = int.Parse(fileline.Substring(start, dashIndex - start).Trim());
-                                        else if (nexelt == "-ARCID")
+                                        else
                                             ms.seqnum = int.Parse(fileline.Substring(start, dashIndex - start).Trim());
                                     }
                                     index = start;
                                 }
                                 break;
-
                         }
                     }
                 }
+                if (ignoreline) continue;
+
                 if (ms.registration == "" && ms.seqnumrel != -1)
                 {
                     // this is a line with no registration, it must be linked via SEQNUM to a previous line
@@ -348,13 +400,14 @@ namespace BrowseMessageCA
                         }
                     }
                 }
-                if (ms.registration == "" && ms.mestype != MCAMessageType.LAM)
-                    MessageBox.Show("The line at " + ms.datetime.ToString() + " have no registration information and doesn't correspond to another line found before, it is ignored");
+                if (ms.registration == "") continue;// && ms.mestype != MCAMessageType.LAM) continue;
+                    //MessageBox.Show("The line at " + ms.datetime.ToString() + " have no registration information and doesn't correspond to another line found before, it is ignored");
                 msLines.Add(ms);
             }
         }
         List<MessageCALine>[] listMes = new List<MessageCALine>[MCAMesType.Count];
         List<MessageCALine>[] listLAMes = new List<MessageCALine>[MCAMesType.Count];
+        // remplit les tableaux en fonction de ce dont on a besoin, une fois que les messages ont été analysés
         private void FillTableau()
         {
             listMessages.Items.Clear();
@@ -363,7 +416,7 @@ namespace BrowseMessageCA
             for (int j = 0; j < MCAMesType.Count; j++)
             {
                 var type = MCAMesType[j];
-                if (type.text == "NUL") continue;// || type.text == "LAM") continue;
+                //if (type.text == "NUL") continue;// || type.text == "LAM") continue;
                 listMes[j] = new List<MessageCALine>();
                 listLAMes[j] = new List<MessageCALine>();
                 int nlyba = 0;
@@ -385,7 +438,17 @@ namespace BrowseMessageCA
                         }
                     }
                 }
-                item = new ListViewItem(type.text);
+                if (type.text == "NUL")
+                {
+                    string autmsg = "";
+                    for (int i = 0; i < autresTypes.Count; i++)
+                    {
+                        autmsg += autresTypes[i];
+                        if (i < autresTypes.Count - 1) autmsg += "/";
+                    }
+                    item = new ListViewItem(NulText + " (" + autmsg + ")");
+                }
+                else item = new ListViewItem(type.text);
                 item.SubItems.Add(listMes[j].Count().ToString());
                 item.SubItems.Add(listLAMes[j].Count().ToString());
                 item.SubItems.Add(nlyba.ToString());
@@ -404,6 +467,8 @@ namespace BrowseMessageCA
             //List<string> balisebaly = new List<string>();
             listBALY.Items.Clear();
             listLYBA.Items.Clear();
+            // on dénombre les messages NON DECODE/ASSOCIABLE NON ASSOCIE/NON ASSOCIABLE/ASSOCIE
+            // et on en profite pour lister les balises de coordination
             foreach (var msg in msLines)
             {
                 if (msg.sender == Terrain1 && msg.receiver == Terrain2)
@@ -423,6 +488,15 @@ namespace BrowseMessageCA
                     if (msg.ptid != "") listBALY.Items.Add(msg.ptid);
                 }
             }
+            // retirer les doublons dans les listboxes des balises
+            var distinctItems = listLYBA.Items.Cast<string>().Distinct().ToList();
+            listLYBA.Items.Clear();
+            listLYBA.Items.AddRange(distinctItems.ToArray());
+            distinctItems = listBALY.Items.Cast<string>().Distinct().ToList();
+            listBALY.Items.Clear();
+            listBALY.Items.AddRange(distinctItems.ToArray());
+
+            // lister les messages NON DECODE/ASSOCIABLE NON ASSOCIE/NON ASSOCIABLE/ASSOCIE
             item = new ListViewItem("NON DECODE");
             item.SubItems.Add("");
             item.SubItems.Add("");
@@ -448,6 +522,60 @@ namespace BrowseMessageCA
             item.SubItems.Add(nassbaly.ToString());
             listMessages.Items.Add(item);
         }
+        // on fait un tour rapide de tous les terrains sender/receiver présents dans le fichier et on les met dans une liste
+        private List<(string, string)> ListeCouplesTerrains(string fc)
+        {
+            var result = new List<(string, string)>();
+
+            var lines = fc.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (!line.Contains("-REFDATA") || line.Contains("-MSGREF"))
+                    continue;
+
+                var senderFac = GetFacAfterKeyword(line, "-SENDER -FAC");
+                var recvrFac = GetFacAfterKeyword(line, "-RECVR -FAC");
+
+                if (senderFac != null && recvrFac != null)
+                {
+                    var tuple = (senderFac, recvrFac);
+                    var reversed = (recvrFac, senderFac);
+
+                    if (!result.Contains(tuple) && !result.Contains(reversed))
+                    {
+                        result.Add(tuple);
+                    }
+                }
+            }
+            return result;
+        }
+        // obtient la valeur après un "-FAC" donné
+        private string GetFacAfterKeyword(string line, string keyword)
+        {
+            int index = line.IndexOf(keyword);
+            if (index == -1)
+                return null;
+
+            index += keyword.Length;
+            var remaining = line.Substring(index).TrimStart();
+
+            var parts = remaining.Split(new[] { ' ', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 0)
+                return parts[0];
+
+            return null;
+        }
+
+        private void GetAllTerrains(string fc)
+        {
+            // les terrains sont placés après les "-FAC"
+            var matches = Regex.Matches(fc, @"-FAC\s+([^\s\-]+)");
+            var facSet = new HashSet<string>();
+            foreach (Match match in matches) facSet.Add(match.Groups[1].Value);
+            CouplesTerrains = ListeCouplesTerrains(fc);
+        }
+        // action quand on va charger un nouveau fichier
         private void button1_Click(object sender, EventArgs e)
         {
             try
@@ -463,17 +591,25 @@ namespace BrowseMessageCA
 
                     if (openFileDialog.ShowDialog() == DialogResult.OK)
                     {
-                        //Get the path of specified file
+                        // on obtient le chemin du fichier sélectionné
                         filePath = openFileDialog.FileName;
 
-                        //Read the contents of the file into a stream
                         var fileStream = openFileDialog.OpenFile();
-                        string fileContent = string.Empty;
                         using (StreamReader reader = new StreamReader(fileStream))
                         {
+                            // on lit le fichier dans une string
                             fileContent = reader.ReadToEnd();
-                            ParseMessageCA(fileContent);
-                            FillTableau();
+                            dispNoLAM = false;
+                            dispList = -1;
+                            filelines = new List<string>();
+                            // on cherche vite fait les terrains et on les liste dans les 2 combo boxes
+                            GetAllTerrains(fileContent);
+                            comboBox1.Items.Clear();
+                            foreach (var (tr1,tr2) in CouplesTerrains)
+                            {
+                                comboBox1.Items.Add(tr1+"<->"+tr2);
+                            }
+                            comboBox1.SelectedIndex = 0;
                             isLoaded = true;
                         }
 
@@ -484,6 +620,30 @@ namespace BrowseMessageCA
             {
                 MessageBox.Show(ex.Message);
             }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            listMessages.Items.Clear();
+            listSubMessages.Items.Clear();
+            listLYBA.Items.Clear();
+            listBALY.Items.Clear();
+            string ctr = comboBox1.Text;
+            string[] parts = ctr.Split(new[] { "<->" }, StringSplitOptions.None);
+            Terrain1 = parts[0];
+            Terrain2 = parts.Length > 1 ? parts[1] : "";
+            if (Terrain1 == Terrain2 || Terrain2 == "")
+            {
+                MessageBox.Show("Erreur sur les terrains choisi, vérifiez avant de cliquer sur OK","Action ignorée");
+                return;
+            }
+            label2.Text = "Balises " + Terrain1 + "->" + Terrain2;
+            label3.Text = "Balises " + Terrain2 + "->" + Terrain1;
+            listMessages.Columns[3].Text = Terrain1 + "->" + Terrain2;
+            listMessages.Columns[4].Text = Terrain2 + "->" + Terrain1;
+            ParseMessageCA(fileContent);
+            FillTableau();
+
         }
     }
 }
