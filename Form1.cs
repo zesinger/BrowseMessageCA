@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -13,17 +12,18 @@ namespace BrowseMessageCA
     public partial class Form1 : Form
     {
         // version du logiciel
-        const int majVer = 1;
-        const int minver = 1;
+        private const int majVer = 1;
+        private const int minver = 2;
 
         // terrains sender et receiver
-        string Terrain1 = "LY";
-        string Terrain2 = "BA";
-        List<(string,string)> CouplesTerrains = new List<(string,string)> ();
-        string fileContent = string.Empty;
+        private string Terrain1 = "LY";
+        private string Terrain2 = "BA";
+        private List<(string, string)> CouplesTerrains = new List<(string, string)>();
+        private string fileContent = string.Empty;
         //List<string> AllTerrains = new List<string>();
 
-        const string NulText = "Autre";
+        private int LigneNul = -1;
+        private const string NulText = "Autre";
         // toujours laisser "type" en premier dans cette enum
         public enum MCAElementType
         {
@@ -96,7 +96,7 @@ namespace BrowseMessageCA
             return "NUL";
         }
         private bool isLoaded = false;
-        private bool dispNoLAM = false;
+        //private bool dispNoLAM = false;
         private int dispList = -1;
         List<string> filelines = new List<string>();
         List<string> autresTypes = new List<string>();
@@ -131,7 +131,7 @@ namespace BrowseMessageCA
             listMessages.Columns[4].Text = Terrain2 + "->" + Terrain1;
             listMessages.MouseClick += listMessages_OnClick;
             listSubMessages.MouseClick += listSubMessages_OnClick;
-            this.Text = "Analyse des messages v" + majVer.ToString() + "." + minver.ToString()+" par David Lafarge";
+            this.Text = "Analyse des messages v" + majVer.ToString() + "." + minver.ToString() + " par David Lafarge";
         }
         private void listMessages_OnClick(object sender, MouseEventArgs e)
         {
@@ -139,13 +139,14 @@ namespace BrowseMessageCA
             var info = listMessages.HitTest(e.Location);
             if (info.Item != null && info.SubItem != null)
             {
-                //int rowIndex = info.Item.Index; // Row number
+                int rowIndex = info.Item.Index;
                 int columnIndex = info.Item.SubItems.IndexOf(info.SubItem); // Column number
 
-                ClickFunction(columnIndex, info.Item.Text);
+                ClickFunction(columnIndex, rowIndex, info.Item.Text);
             }
         }
-        private void ClickFunction(int col, string itemtxt)
+        List<MessageCALine> listDispMes;
+        private void ClickFunction(int col, int row, string itemtxt)
         {
             listSubMessages.Items.Clear();
             textMessage.Text = "";
@@ -153,36 +154,63 @@ namespace BrowseMessageCA
             for (int j = 0; j < MCAMesType.Count; j++)
             {
                 if (MCAMesType[j].text == itemtxt) i = j;
-                if (itemtxt.StartsWith(NulText)) i = j;
+                else if (itemtxt.StartsWith(NulText)) i = j;
             }
             dispList = i;
             if (i == -1) return;
-            if (col == 0 || col == 1)
+            if (row <= LigneNul)
             {
-                dispNoLAM = false;
-                foreach (var msg in listMes[i])
+                if (col == 1)
                 {
-                    var item = new ListViewItem(msg.registration);
-                    string ass = "";
-                    if (msg.associe == true) ass = "Oui/"; else ass = "Non/";
-                    if (msg.notassocie == true) ass += "Oui"; else ass += "Non";
-                    item.SubItems.Add(ass);
-                    item.SubItems.Add(msg.sender + "->" + msg.receiver);
-                    listSubMessages.Items.Add(item);
+                    //dispNoLAM = false;
+                    foreach (var msg in listMes[i])
+                    {
+                        var item = new ListViewItem(msg.registration);
+                        string ass = "";
+                        if (msg.associe == true) ass = "Oui/"; else ass = "Non/";
+                        if (msg.notassocie == true) ass += "Oui"; else ass += "Non";
+                        item.SubItems.Add(ass);
+                        item.SubItems.Add(msg.sender + "->" + msg.receiver);
+                        listSubMessages.Items.Add(item);
+                        listDispMes = listLAMes[i];
+                    }
+                }
+                else if (col == 2)
+                {
+                    //dispNoLAM = true;
+                    foreach (var msg in listLAMes[i])
+                    {
+                        var item = new ListViewItem(msg.registration);
+                        string ass = "";
+                        if (msg.associe == true) ass = "Oui/"; else ass = "Non/";
+                        if (msg.notassocie == true) ass += "Oui"; else ass += "Non";
+                        item.SubItems.Add(ass);
+                        item.SubItems.Add(msg.sender + "->" + msg.receiver);
+                        listSubMessages.Items.Add(item);
+                        listDispMes = listMes[i];
+                    }
+                }
+                else if (col == 3)
+                {
+                    //dispNoLAM = true;
+                    foreach (var msg in listlybaMes[i])
+                    {
+                        var item = new ListViewItem(msg.registration);
+                        string ass = "";
+                        if (msg.associe == true) ass = "Oui/"; else ass = "Non/";
+                        if (msg.notassocie == true) ass += "Oui"; else ass += "Non";
+                        item.SubItems.Add(ass);
+                        item.SubItems.Add(msg.sender + "->" + msg.receiver);
+                        listSubMessages.Items.Add(item);
+                        listDispMes = listlybaMes[i];
+                    }
                 }
             }
-            else if (col == 2)
+            else
             {
-                dispNoLAM = true;
-                foreach (var msg in listLAMes[i])
+                if (col == 3)
                 {
-                    var item = new ListViewItem(msg.registration);
-                    string ass = "";
-                    if (msg.associe == true) ass = "Oui/"; else ass = "Non/";
-                    if (msg.notassocie == true) ass += "Oui"; else ass += "Non";
-                    item.SubItems.Add(ass);
-                    item.SubItems.Add(msg.sender + "->" + msg.receiver);
-                    listSubMessages.Items.Add(item);
+                    //fsgjfdyyjk
                 }
             }
         }
@@ -193,24 +221,26 @@ namespace BrowseMessageCA
             if (info.Item != null && info.SubItem != null)
             {
                 int rowIndex = info.Item.Index; // Row number
-
                 ClickSubFunction(rowIndex);
             }
         }
         private void ClickSubFunction(int row)
         {
-            if (dispNoLAM)
-            {
-                if (row < listLAMes[dispList].Count)
-                    textMessage.Text = listLAMes[dispList][row].fullline;
-                else textMessage.Text = "";
-            }
-            else
-            {
-                if (row < listMes[dispList].Count)
-                    textMessage.Text = listMes[dispList][row].fullline;
-                else textMessage.Text = "";
-            }
+            if (row < listDispMes.Count)
+                textMessage.Text = listDispMes[row].fullline;
+            else textMessage.Text = "";
+            //if (dispNoLAM)
+            //{
+            //    if (row < listLAMes[dispList].Count)
+            //        textMessage.Text = listLAMes[dispList][row].fullline;
+            //    else textMessage.Text = "";
+            //}
+            //else
+            //{
+            //    if (row < listMes[dispList].Count)
+            //        textMessage.Text = listMes[dispList][row].fullline;
+            //    else textMessage.Text = "";
+            //}
         }
         private void ParseMessageCA(string fileContent)
         {
@@ -400,13 +430,26 @@ namespace BrowseMessageCA
                         }
                     }
                 }
-                if (ms.registration == "") continue;// && ms.mestype != MCAMessageType.LAM) continue;
-                    //MessageBox.Show("The line at " + ms.datetime.ToString() + " have no registration information and doesn't correspond to another line found before, it is ignored");
+                if (ms.registration == "" && ms.mestype != MCAMessageType.NUL && ms.mestype != MCAMessageType.LAM) continue;
+                //MessageBox.Show("The line at " + ms.datetime.ToString() + " have no registration information and doesn't correspond to another line found before, it is ignored");
                 msLines.Add(ms);
             }
         }
         List<MessageCALine>[] listMes = new List<MessageCALine>[MCAMesType.Count];
         List<MessageCALine>[] listLAMes = new List<MessageCALine>[MCAMesType.Count];
+        List<MessageCALine>[] listlybaMes = new List<MessageCALine>[MCAMesType.Count];
+        List<MessageCALine>[] listlybaLAMes = new List<MessageCALine>[MCAMesType.Count];
+        List<MessageCALine>[] listbalyMes = new List<MessageCALine>[MCAMesType.Count];
+        List<MessageCALine>[] listbalyLAMes = new List<MessageCALine>[MCAMesType.Count];
+        List<MessageCALine> listlybaNDMes = new List<MessageCALine>();
+        List<MessageCALine> listlybaANAMes = new List<MessageCALine>();
+        List<MessageCALine> listlybaNAMes = new List<MessageCALine>();
+        List<MessageCALine> listlybaAMes = new List<MessageCALine>();
+        List<MessageCALine> listbalyNDMes = new List<MessageCALine>();
+        List<MessageCALine> listbalyANAMes = new List<MessageCALine>();
+        List<MessageCALine> listbalyNAMes = new List<MessageCALine>();
+        List<MessageCALine> listbalyAMes = new List<MessageCALine>();
+
         // remplit les tableaux en fonction de ce dont on a besoin, une fois que les messages ont été analysés
         private void FillTableau()
         {
@@ -416,25 +459,27 @@ namespace BrowseMessageCA
             for (int j = 0; j < MCAMesType.Count; j++)
             {
                 var type = MCAMesType[j];
-                //if (type.text == "NUL") continue;// || type.text == "LAM") continue;
                 listMes[j] = new List<MessageCALine>();
                 listLAMes[j] = new List<MessageCALine>();
-                int nlyba = 0;
-                int nbaly = 0;
+                listlybaMes[j] = new List<MessageCALine>();
+                listlybaLAMes[j] = new List<MessageCALine>();
+                listbalyMes[j] = new List<MessageCALine>();
+                listbalyLAMes[j] = new List<MessageCALine>();
                 foreach (var msg in msLines)
                 {
-
                     if (msg.mestype == MCAMesType[j].Type)
                     {
                         listMes[j].Add(msg);
                         if (!msg.islam) listLAMes[j].Add(msg);
                         if (msg.sender == Terrain1 && msg.receiver == Terrain2)
                         {
-                            nlyba++;
+                            listlybaMes[j].Add(msg);
+                            if (!msg.islam) listlybaLAMes[j].Add(msg);
                         }
                         if (msg.sender == Terrain2 && msg.receiver == Terrain1)
                         {
-                            nbaly++;
+                            listbalyMes[j].Add(msg);
+                            if (!msg.islam) listbalyLAMes[j].Add(msg);
                         }
                     }
                 }
@@ -446,13 +491,16 @@ namespace BrowseMessageCA
                         autmsg += autresTypes[i];
                         if (i < autresTypes.Count - 1) autmsg += "/";
                     }
+                    LigneNul = listMessages.Items.Count;
                     item = new ListViewItem(NulText + " (" + autmsg + ")");
                 }
                 else item = new ListViewItem(type.text);
                 item.SubItems.Add(listMes[j].Count().ToString());
                 item.SubItems.Add(listLAMes[j].Count().ToString());
-                item.SubItems.Add(nlyba.ToString());
-                item.SubItems.Add(nbaly.ToString());
+                item.SubItems.Add(listlybaMes[j].Count.ToString());
+                item.SubItems.Add(listlybaMes[j].Count.ToString());
+                item.SubItems.Add(listbalyLAMes[j].Count.ToString());
+                item.SubItems.Add(listbalyLAMes[j].Count.ToString());
                 listMessages.Items.Add(item);
             }
             int nndeclyba = 0;
@@ -463,28 +511,67 @@ namespace BrowseMessageCA
             int nanabaly = 0;
             int nnabaly = 0;
             int nassbaly = 0;
-            //List<string> baliselyba = new List<string>();
-            //List<string> balisebaly = new List<string>();
             listBALY.Items.Clear();
             listLYBA.Items.Clear();
             // on dénombre les messages NON DECODE/ASSOCIABLE NON ASSOCIE/NON ASSOCIABLE/ASSOCIE
             // et on en profite pour lister les balises de coordination
             foreach (var msg in msLines)
             {
+                listlybaNDMes = new List<MessageCALine>();
+                listlybaANAMes = new List<MessageCALine>();
+                listlybaNAMes = new List<MessageCALine>();
+                listlybaAMes = new List<MessageCALine>();
+                listbalyNDMes = new List<MessageCALine>();
+                listbalyANAMes = new List<MessageCALine>();
+                listbalyNAMes = new List<MessageCALine>();
+                listbalyAMes = new List<MessageCALine>();
+
                 if (msg.sender == Terrain1 && msg.receiver == Terrain2)
                 {
-                    if (msg.notdecode) nndeclyba++;
-                    if (msg.notassocie) nanalyba++;
-                    if (msg.notassociable) nnalyba++;
-                    if (msg.associe) nasslyba++;
-                    if (msg.ptid!="") listLYBA.Items.Add(msg.ptid);
+                    if (msg.notdecode)
+                    {
+                        nndeclyba++;
+                        listlybaNDMes.Add(msg);
+                    }
+                    if (msg.notassocie)
+                    {
+                        nanalyba++;
+                        listlybaANAMes.Add(msg);
+                    }
+                    if (msg.notassociable)
+                    {
+                        nnalyba++;
+                        listlybaNAMes.Add(msg);
+                    }
+                    if (msg.associe)
+                    {
+                        nasslyba++;
+                        listlybaAMes.Add(msg);
+                    }
+                    if (msg.ptid != "") listLYBA.Items.Add(msg.ptid);
                 }
                 if (msg.sender == Terrain2 && msg.receiver == Terrain1)
                 {
-                    if (msg.notdecode) nndecbaly++;
-                    if (msg.notassocie) nanabaly++;
-                    if (msg.notassociable) nnabaly++;
-                    if (msg.associe) nassbaly++;
+                    if (msg.notdecode)
+                    {
+                        nndecbaly++;
+                        listbalyNDMes.Add(msg);
+                    }
+                    if (msg.notassocie)
+                    {
+                        nanabaly++;
+                        listbalyANAMes.Add(msg);
+                    }
+                    if (msg.notassociable)
+                    {
+                        nnabaly++;
+                        listbalyNAMes.Add(msg);
+                    }
+                    if (msg.associe)
+                    {
+                        nassbaly++;
+                        listbalyAMes.Add(msg);
+                    }
                     if (msg.ptid != "") listBALY.Items.Add(msg.ptid);
                 }
             }
@@ -501,25 +588,33 @@ namespace BrowseMessageCA
             item.SubItems.Add("");
             item.SubItems.Add("");
             item.SubItems.Add(nndeclyba.ToString());
+            item.SubItems.Add("");
             item.SubItems.Add(nndecbaly.ToString());
+            item.SubItems.Add("");
             listMessages.Items.Add(item);
             item = new ListViewItem("ASSOCIABLE NON ASSOCIE");
             item.SubItems.Add("");
             item.SubItems.Add("");
             item.SubItems.Add(nanalyba.ToString());
+            item.SubItems.Add("");
             item.SubItems.Add(nanabaly.ToString());
+            item.SubItems.Add("");
             listMessages.Items.Add(item);
             item = new ListViewItem("NON ASSOCIABLE");
             item.SubItems.Add("");
             item.SubItems.Add("");
             item.SubItems.Add(nnalyba.ToString());
+            item.SubItems.Add("");
             item.SubItems.Add(nnabaly.ToString());
+            item.SubItems.Add("");
             listMessages.Items.Add(item);
             item = new ListViewItem("ASSOCIE");
             item.SubItems.Add("");
             item.SubItems.Add("");
             item.SubItems.Add(nasslyba.ToString());
+            item.SubItems.Add("");
             item.SubItems.Add(nassbaly.ToString());
+            item.SubItems.Add("");
             listMessages.Items.Add(item);
         }
         // on fait un tour rapide de tous les terrains sender/receiver présents dans le fichier et on les met dans une liste
@@ -605,9 +700,9 @@ namespace BrowseMessageCA
                             // on cherche vite fait les terrains et on les liste dans les 2 combo boxes
                             GetAllTerrains(fileContent);
                             comboBox1.Items.Clear();
-                            foreach (var (tr1,tr2) in CouplesTerrains)
+                            foreach (var (tr1, tr2) in CouplesTerrains)
                             {
-                                comboBox1.Items.Add(tr1+"<->"+tr2);
+                                comboBox1.Items.Add(tr1 + "<->" + tr2);
                             }
                             comboBox1.SelectedIndex = 0;
                             isLoaded = true;
@@ -634,7 +729,7 @@ namespace BrowseMessageCA
             Terrain2 = parts.Length > 1 ? parts[1] : "";
             if (Terrain1 == Terrain2 || Terrain2 == "")
             {
-                MessageBox.Show("Erreur sur les terrains choisi, vérifiez avant de cliquer sur OK","Action ignorée");
+                MessageBox.Show("Erreur sur les terrains choisi, vérifiez avant de cliquer sur OK", "Action ignorée");
                 return;
             }
             label2.Text = "Balises " + Terrain1 + "->" + Terrain2;
