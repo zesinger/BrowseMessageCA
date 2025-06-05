@@ -486,17 +486,16 @@ namespace BrowseMessageCA
             listLYBA.Items.Clear();
             // on dénombre les messages NON DECODE/ASSOCIABLE NON ASSOCIE/NON ASSOCIABLE/ASSOCIE
             // et on en profite pour lister les balises de coordination
+            listlybaNDMes = new List<MessageCALine>();
+            listlybaANAMes = new List<MessageCALine>();
+            listlybaNAMes = new List<MessageCALine>();
+            listlybaAMes = new List<MessageCALine>();
+            listbalyNDMes = new List<MessageCALine>();
+            listbalyANAMes = new List<MessageCALine>();
+            listbalyNAMes = new List<MessageCALine>();
+            listbalyAMes = new List<MessageCALine>();
             foreach (var msg in msLines)
             {
-                listlybaNDMes = new List<MessageCALine>();
-                listlybaANAMes = new List<MessageCALine>();
-                listlybaNAMes = new List<MessageCALine>();
-                listlybaAMes = new List<MessageCALine>();
-                listbalyNDMes = new List<MessageCALine>();
-                listbalyANAMes = new List<MessageCALine>();
-                listbalyNAMes = new List<MessageCALine>();
-                listbalyAMes = new List<MessageCALine>();
-
                 if (msg.sender == Terrain1 && msg.receiver == Terrain2)
                 {
                     if (msg.notdecode) listlybaNDMes.Add(msg);
