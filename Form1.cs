@@ -694,7 +694,7 @@ namespace BrowseMessageCA
                         {
                             // on lit le fichier dans une string
                             fileContent = reader.ReadToEnd();
-                            dispNoLAM = false;
+                            //dispNoLAM = false;
                             dispList = -1;
                             filelines = new List<string>();
                             // on cherche vite fait les terrains et on les liste dans les 2 combo boxes
